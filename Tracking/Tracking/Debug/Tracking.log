@@ -1,0 +1,3 @@
+﻿  main.cpp
+c:\users\rafik\downloads\ets cours\h18\inf749\projet\tracking\tracking\main.cpp(84): warning C4244: 'initialisation' : conversion de 'double' en 'float', perte possible de données
+Debug\Camera.obj : fatal error LNK1112: type d'ordinateur module 'x86' en conflit avec le type d'ordinateur cible 'x64'
