@@ -14,7 +14,7 @@ using namespace cv;
 
 Ptr<Tracker> createTracker(string name)
 {
-	Ptr<Tracker> tracker;
+	Ptr<Tracker> tracker;//lol
 
 	if (name == "KCF")
 		tracker = cv::TrackerKCF::create();
