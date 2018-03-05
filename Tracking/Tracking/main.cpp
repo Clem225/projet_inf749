@@ -1,20 +1,47 @@
 
 //
 #include "stdafx.h"
-#include "detection.h"
-#include "tracking.h"
+
+#include <iostream>
+#include <cstring>
+#include <opencv2/opencv.hpp>
+#include <opencv2/tracking.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/videoio.hpp>
 
 using namespace std;
 using namespace cv;
 
+Ptr<Tracker> createTracker(string name)
+{
+	Ptr<Tracker> tracker;//lol
+
+	if (name == "KCF")
+		tracker = cv::TrackerKCF::create();
+	else if (name == "TLD")
+		tracker = cv::TrackerTLD::create();
+	else if (name == "BOOSTING")
+		tracker = cv::TrackerBoosting::create();
+	else if (name == "MEDIAN_FLOW")
+		tracker = cv::TrackerMedianFlow::create();
+	else if (name == "MIL")
+		tracker = cv::TrackerMIL::create();
+	else if (name == "GOTURN")
+		tracker = cv::TrackerGOTURN::create();
+	else if (name == "MOSSE")
+		tracker = cv::TrackerMOSSE::create();
+	else if (name == "CSRT")
+		tracker = cv::TrackerCSRT::create();
+	else
+		CV_Error(Error::StsBadArg, "Nom de l'algorithme inconnu\n");
+
+	return tracker;
+}
 
 int main(int argc, const char * argv[])
 {
-	const short FPS = 30;
-	const double every_second = 3.5;
-	int frame_count = 0;
-	VideoCapture video("Videos/lolilol.mp4"); // Mettre 0 pour webcam
-	//VideoCapture video(0); // Mettre 0 pour webcam
+	//VideoCapture video("Videos/chaplin.mp4"); // Mettre 0 pour webcam
+	VideoCapture video(0); // Mettre 0 pour webcam
 
 
 	if (!video.isOpened())
@@ -40,31 +67,50 @@ int main(int argc, const char * argv[])
 	Mat frame;
 	HOGDescriptor hog;
 	hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector()); // Retourne les coefficients du classifieur entrainé pour la detection de gens
+	vector<Rect> humans, humans2;
+
+	video >> frame;
+	hog.detectMultiScale(frame, humans, 0, Size(8, 8), Size(32, 32), 1.1, 2); // detection hog
+
+	unsigned int i, j;
+	for (i = 0; i < humans.size(); i++)
+	{
+		Rect r = humans[i];	// on crée un rectangle pour l'humain i
+
+		for (j = 0; j < humans.size(); j++)       // pas de petit rectangle dans un grand rectangle (pas de chevauchement)
+			if (j != i && (r & humans[j]) == r)
+				break;
+
+		if (j == humans.size())
+			humans2.push_back(r);
+	}
+
+	// dessine rectangle pour chaque humain puis sauvegarde dans une liste
+	for (i = 0; i < humans2.size(); i++)
+	{
+		Rect r = humans2[i];
+		r.x += cvRound(r.width*0.1);
+		r.width = cvRound(r.width*0.8);
+		r.y += cvRound(r.height*0.07);
+		r.height = cvRound(r.height*0.8);
+
+		Rect2d bbox(r.x, r.y, r.width, r.height);
+		list_humans.push_back(bbox);
+
+		//rectangle(frame, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
+	}
 
 	// Initialisation du tracker
 	std::vector< Ptr<Tracker> > list_trackers; // Ptr = shared_ptr
+	for (size_t i = 0; i < list_humans.size(); i++)
+	{
+		list_trackers.push_back(createTracker(trackerAlgo));
+	}
 
-	video >> frame;
-	frame_count++;
-	
-	detection(hog, frame, list_humans, trackers);
-	cout << list_humans.size() << endl;
-	tracking(trackers, list_trackers, trackerAlgo, list_humans, frame);
-
-	int count = FPS * every_second;
+	trackers.add(list_trackers, frame, list_humans);
 
 	while (video.read(frame))
 	{
-		frame_count++;
-		count--;
-		if (count == 0)
-		{
-			count = FPS * every_second;
-			detection(hog, frame, list_humans, trackers);
-			cout << list_humans.size() << endl;
-			tracking(trackers, list_trackers, trackerAlgo, list_humans, frame);
-		}
-
 		// Timer
 		int64 timer = getTickCount();
 
@@ -85,9 +131,6 @@ int main(int argc, const char * argv[])
 		fpsFlow << int(fps);
 		putText(frame, "FPS : " + fpsFlow.str(), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
 		fpsFlow.str("");
-
-		// On affiche le temps écoulé
-		putText(frame, "Temps : " + to_string(double(frame_count)/30.0) + "s", Point(100, 100), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
 
 		imshow("Tracking de la PLS", frame);
 		if (waitKey(20) >= 0)
