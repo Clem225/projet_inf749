@@ -1,2 +1,6 @@
-﻿  main.cpp
-  Tracking.vcxproj -> C:\Users\Rafik\Downloads\ETS Cours\H18\INF749\Projet\Tracking\x64\Debug\Tracking.exe
+﻿  stdafx.cpp
+  Tracker.cpp
+  main.cpp
+  Camera.cpp
+  Génération de code en cours...
+  Tracking.vcxproj -> C:\Users\Clément\Documents\GitHub\projet_inf749\Tracking\x64\Debug\Tracking.exe
