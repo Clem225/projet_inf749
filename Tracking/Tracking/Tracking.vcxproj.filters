@@ -27,6 +27,12 @@
     <ClInclude Include="Tracker.h">
       <Filter>Fichiers sources</Filter>
     </ClInclude>
+    <ClInclude Include="detection.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="tracking.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -39,6 +45,12 @@
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="Tracker.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="detection.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="tracking.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
