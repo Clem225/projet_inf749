@@ -45,6 +45,8 @@ int main(int argc, const char * argv[])
 	
 	int count = FPS * every_second;
 
+	//cout << frame.size() << endl;
+
 	while (video.read(frame))
 	{
 		frame_count++;
@@ -53,8 +55,12 @@ int main(int argc, const char * argv[])
 		{
 			count = FPS * every_second;
 			detection2(hog, frame, list_humans);
+			cout << list_humans.size() << endl;
+
 			trackingManager.setListObjects(list_humans);
+
 			trackingManager.initTracking();
+			cout << trackingManager.getMultiTrackers().getMultiTracker().size() << endl;
 		}
 
 		// Timer

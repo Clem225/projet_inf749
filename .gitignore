@@ -45,3 +45,7 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+Tracking/Tracking/Tracker.cpp
+Tracking/.vs/Tracking/v15/.suo
+*.h
+*.cpp

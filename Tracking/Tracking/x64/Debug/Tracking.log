@@ -1,2 +1,4 @@
-﻿  detection.cpp
-  Tracking.vcxproj -> C:\Users\Clément\Documents\GitHub\projet_inf749\Tracking\x64\Debug\Tracking.exe
+﻿  Tracker.cpp
+c:\users\rafik\documents\github\projet_inf749\tracking\tracking\tracker.cpp(91): warning C4244: 'return' : conversion de '__int64' en 'int', perte possible de données
+c:\users\rafik\documents\github\projet_inf749\tracking\tracking\tracker.cpp(154): warning C4715: 'TrackingManager::initTracking' : les chemins de contrôle ne retournent pas tous une valeur
+  Tracking.vcxproj -> C:\Users\Rafik\Documents\GitHub\projet_inf749\Tracking\x64\Debug\Tracking.exe

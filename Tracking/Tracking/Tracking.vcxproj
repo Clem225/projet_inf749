@@ -112,7 +112,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>opencv_videoio341d.lib;opencv_tracking341d.lib;opencv_core341d.lib;opencv_imgproc341d.lib;opencv_highgui341d.lib;opencv_ml341d.lib;opencv_video341d.lib;opencv_features2d341d.lib;opencv_objdetect341d.lib;opencv_calib3d341d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_videoio341d.lib;opencv_tracking341d.lib;opencv_core341d.lib;opencv_imgproc341d.lib;opencv_highgui341d.lib;opencv_ml341d.lib;opencv_video341d.lib;opencv_features2d341d.lib;opencv_objdetect341d.lib;opencv_calib3d341d.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OPENCV_DIR)\install_debug\x64\vc15\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -159,7 +159,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
     <ClInclude Include="detection.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -167,7 +166,6 @@
     <ClInclude Include="tracking.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="detection.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
