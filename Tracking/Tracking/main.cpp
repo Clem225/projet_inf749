@@ -2,15 +2,97 @@
 //
 #include "stdafx.h"
 #include "detection.h"
-#include "tracking.h"
+//#include "tracking.h"
+
+#include "tracker.h"
 
 using namespace std;
 using namespace cv;
 
-
 int main(int argc, const char * argv[])
 {
 	const short FPS = 30;
+	const double every_second = 3.5;
+	int frame_count = 0;
+	VideoCapture video("Videos/lolilol.mp4"); // Mettre 0 pour webcam
+
+	if (!video.isOpened())
+	{
+		cout << "Impossible d'ouvrir la video" << endl;
+		return -1;
+	}
+
+	namedWindow("Tracking de la PLS", CV_WINDOW_AUTOSIZE);
+	ostringstream fpsFlow;
+
+	// Creation du tracker
+	TrackingManager trackingManager = TrackingManager::getInstance();
+
+	// Liste des humains à traquer
+	vector<Rect2d> list_humans;
+
+	// Detection
+	Mat frame;
+	HOGDescriptor hog;
+	hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector()); // Retourne les coefficients du classifieur entrainé pour la detection de gens
+
+	video >> frame;
+	frame_count++;
+
+	detection2(hog, frame, list_humans);
+	trackingManager.setListObjects(list_humans);
+	trackingManager.initTracking();
+	
+	int count = FPS * every_second;
+
+	while (video.read(frame))
+	{
+		frame_count++;
+		count--;
+		if (count == 0)
+		{
+			count = FPS * every_second;
+			detection2(hog, frame, list_humans);
+			trackingManager.setListObjects(list_humans);
+			trackingManager.initTracking();
+		}
+
+		// Timer
+		int64 timer = getTickCount();
+
+		// Mettre à jour le tracker
+		bool ok = trackingManager.launchTracking(frame);
+
+		// Calcul des FPS
+		double fps = getTickFrequency() / ((double)getTickCount() - timer);
+
+
+		if (ok)
+		{
+			// BROUILLON FAUDRA FAIRE UNE CLASSE SPECIALE POUR DESSINER LES BOITES
+			MultiTrackers multiTracker = trackingManager.getMultiTrackers();
+
+			for_each(multiTracker.getMultiTracker().begin(), multiTracker.getMultiTracker().end(), [&frame](auto tracker) {
+				rectangle(frame, tracker.get()->getBbox(), Scalar(255, 0, 0), 2, 1);
+			});
+		}
+
+		// On affiche les FPS
+		fpsFlow << int(fps);
+		putText(frame, "FPS : " + fpsFlow.str(), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+		fpsFlow.str("");
+
+		// On affiche le temps écoulé
+		putText(frame, "Temps : " + to_string(double(frame_count) / 30.0) + "s", Point(100, 100), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+		imshow("Tracking de la PLS", frame);
+		if (waitKey(20) >= 0)
+			break;
+	}
+
+
+
+	/*const short FPS = 30;
 	const double every_second = 3.5;
 	int frame_count = 0;
 	VideoCapture video("Videos/lolilol.mp4"); // Mettre 0 pour webcam
@@ -92,7 +174,7 @@ int main(int argc, const char * argv[])
 		imshow("Tracking de la PLS", frame);
 		if (waitKey(20) >= 0)
 			break;
-	}
+	}*/
 
 	/*while (video.read(frame))
 	{
@@ -187,6 +269,7 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+
 	// List of tracker types in OpenCV 3.2
 	// NOTE : GOTURN implementation is buggy and does not work.
 	string trackerTypes[6] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN" };
@@ -195,30 +278,30 @@ int main(int argc, char **argv)
 	// Create a tracker
 	string trackerType = trackerTypes[2];
 
-	Ptr<Tracker> tracker; // Equivalent à shared_ptr
+	Ptr<Tracker> tracker;
 
 #if (CV_MINOR_VERSION < 3)
 	{
 		tracker = Tracker::create(trackerType);
-	}
+}
 #else
 	{
-		if (trackerType == "BOOSTING")				// nul
+		if (trackerType == "BOOSTING")
 			tracker = TrackerBoosting::create();
-		if (trackerType == "MIL")					// hyper lent
-			tracker = TrackerMIL::create(); 
-		if (trackerType == "KCF")					// meilleur en temps/performance <<<<<
+		if (trackerType == "MIL")
+			tracker = TrackerMIL::create();
+		if (trackerType == "KCF")
 			tracker = TrackerKCF::create();
-		if (trackerType == "TLD")					// assez lent
+		if (trackerType == "TLD")
 			tracker = TrackerTLD::create();
-		if (trackerType == "MEDIANFLOW")			// hyper rapide mais performance nulle
+		if (trackerType == "MEDIANFLOW")
 			tracker = TrackerMedianFlow::create();
-		if (trackerType == "GOTURN")				// marche pas
+		if (trackerType == "GOTURN")
 			tracker = TrackerGOTURN::create();
 	}
 #endif
 	// Read video
-	VideoCapture video("Videos/chaplin.mp4");
+	VideoCapture video("videos/chaplin.mp4");
 
 	// Exit if video is not opened
 	if (!video.isOpened())
@@ -241,13 +324,11 @@ int main(int argc, char **argv)
 	// Display bounding box.
 	rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
 	imshow("Tracking", frame);
-	//waitKey();
 
 	tracker->init(frame, bbox);
-	
+
 	while (video.read(frame))
 	{
-		
 		// Start timer
 		double timer = (double)getTickCount();
 
@@ -259,8 +340,6 @@ int main(int argc, char **argv)
 
 		if (ok)
 		{
-			cout << fps << endl;
-
 			// Tracking success : Draw the tracked object
 			rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
 		}
@@ -287,5 +366,4 @@ int main(int argc, char **argv)
 		}
 
 	}
-	waitKey(0);
 }*/
