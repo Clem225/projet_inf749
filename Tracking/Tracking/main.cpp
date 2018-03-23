@@ -3,18 +3,23 @@
 #include "stdafx.h"
 #include "detection.h"
 //#include "tracking.h"
-
 #include "tracker.h"
+
+#include <chrono>
+#include <numeric>
 
 using namespace std;
 using namespace cv;
 
+#define WIDTH_RESIZE 360;
+#define TRACKER_MAJ 4;
+
 int main(int argc, const char * argv[])
 {
-	const short FPS = 30;
-	const double every_second = 3.5;
+	const short FPS = 50;
+	const double every_second = 1;
 	int frame_count = 0;
-	VideoCapture video("Videos/lolilol.mp4"); // Mettre 0 pour webcam
+	VideoCapture video("Videos/terrace1-c3.avi"); // Mettre 0 pour webcam
 
 	if (!video.isOpened())
 	{
@@ -31,70 +36,207 @@ int main(int argc, const char * argv[])
 	// Liste des humains à traquer
 	vector<Rect2d> list_humans;
 
+
 	// Detection
 	Mat frame;
 	HOGDescriptor hog;
 	hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector()); // Retourne les coefficients du classifieur entrainé pour la detection de gens
 
+	String fullbody_cascade_name = "D:/OpenCV/build/install_debug/etc/haarcascades/haarcascade_fullbody.xml";
+	CascadeClassifier fullbody_cascade;
+	// Chargement des cascades
+	if (!fullbody_cascade.load(fullbody_cascade_name)) { printf("--(!)Erreur de chargemet\n"); return -1; };
+
 	video >> frame;
 	frame_count++;
+	cv::Size video_size = frame.size();
+	float resize_factor = video_size.width / WIDTH_RESIZE;
 
-	detection2(hog, frame, list_humans);
+	/*detection2(hog, frame, list_humans);
 	trackingManager.setListObjects(list_humans);
-	trackingManager.initTracking();
+	trackingManager.initTracking();*/
 	
+	vector<long long> temps;
 	int count = FPS * every_second;
 
-	//cout << frame.size() << endl;
+	int tracker_count = TRACKER_MAJ;
 
 	while (video.read(frame))
 	{
-		frame_count++;
-		count--;
-		if (count == 0)
-		{
-			count = FPS * every_second;
-			detection2(hog, frame, list_humans);
-			cout << list_humans.size() << endl;
-
-			trackingManager.setListObjects(list_humans);
-
-			trackingManager.initTracking();
-			cout << trackingManager.getMultiTrackers().getMultiTracker().size() << endl;
-		}
+		auto debut = chrono::high_resolution_clock::now();
 
 		// Timer
 		int64 timer = getTickCount();
 
+		frame_count++;
+
+		//Redimensionnement de la frame (pour avoir une detection plus rapide)
+		cv::Mat resized;
+		cv::resize(frame, resized, cv::Size(video_size.width / resize_factor, video_size.height / resize_factor));
+
+		count--;
+		if (count == 0)
+		{
+			count = FPS * every_second;
+			/*detection2(hog, resized, list_humans);
+			trackingManager.setListObjects(list_humans);
+			trackingManager.initTracking();*/
+
+			// Detection et mesure du temps de detection
+			auto start = chrono::high_resolution_clock::now();
+			detection2(fullbody_cascade, resized, list_humans, 1.05, cv::Size(40, 80));
+			//detection(hog, frame, list_humans);
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+			temps.push_back(duration.count());
+			auto average = accumulate(temps.begin(), temps.end(), 0.0) / temps.size();
+
+			//Affichage des informations
+			cout << "Temps de detection moyen : " << average << endl;
+			cout << "Nombre de personnes detectees : " << list_humans.size() << endl;
+			cout << "Taille des boites : " << endl;
+
+			unsigned int i = 0;
+			for (vector<Rect2d>::iterator it = list_humans.begin(); it != list_humans.end(); it++, i++) {
+				cout << "Rectangle n=" << i << " : " << "largeur = " << it->width << ", hauteur : " << it->height << endl;
+			}
+			cout << "\n" << endl; // Saut de ligne
+
+			// Tracking
+			trackingManager.setListObjects(list_humans);
+			trackingManager.initTracking();
+		}
+
+
 		// Mettre à jour le tracker
-		bool ok = trackingManager.launchTracking(frame);
+		bool ok = false;
+		tracker_count--;
+		if (!tracker_count)
+		{
+			//cout << "MAJ , frame = " << frame_count << endl;
+			ok = trackingManager.launchTracking(resized);
+			tracker_count = TRACKER_MAJ;
+		}
 
-		// Calcul des FPS
-		double fps = getTickFrequency() / ((double)getTickCount() - timer);
+		cv::Rect2d bboxResized;
 
-
-		if (ok)
+		//if (ok)
 		{
 			// BROUILLON FAUDRA FAIRE UNE CLASSE SPECIALE POUR DESSINER LES BOITES
 			MultiTrackers multiTracker = trackingManager.getMultiTrackers();
 
-			for_each(multiTracker.getMultiTracker().begin(), multiTracker.getMultiTracker().end(), [&frame](auto tracker) {
-				rectangle(frame, tracker.get()->getBbox(), Scalar(255, 0, 0), 2, 1);
+			for_each(multiTracker.getMultiTracker().begin(), multiTracker.getMultiTracker().end(), [&](auto tracker) {
+
+				bboxResized = tracker.get()->getBbox();
+
+				bboxResized.x *= resize_factor;
+				bboxResized.y *= resize_factor;
+				bboxResized.width *= resize_factor;
+				bboxResized.height *= resize_factor;
+
+				rectangle(frame, bboxResized, Scalar(255, 0, 0), 2, 1);
 			});
 		}
+
+		// On affiche le temps écoulé
+		putText(frame, "Temps : " + to_string(double(frame_count) / 30.0) + "s", Point(100, 100), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+		// Calcul des FPS
+		double fps = getTickFrequency() / ((double)getTickCount() - timer);
 
 		// On affiche les FPS
 		fpsFlow << int(fps);
 		putText(frame, "FPS : " + fpsFlow.str(), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
 		fpsFlow.str("");
 
-		// On affiche le temps écoulé
-		putText(frame, "Temps : " + to_string(double(frame_count) / 30.0) + "s", Point(100, 100), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
-
 		imshow("Tracking de la PLS", frame);
-		if (waitKey(20) >= 0)
-			break;
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - debut);
+		auto sec = 1000/FPS - duration.count();
+
+		if (sec > 1)
+			waitKey(sec);
+		else
+			waitKey(1);
+
+		/*if (waitKey() >= 0)
+			break;*/
+
 	}
+
+
+	/*// ------ DETECTION -------
+	Mat frame;
+
+	HOGDescriptor hog;
+	hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector()); // Retourne les coefficients du classifieur entrainé pour la detection de gens
+
+	String fullbody_cascade_name = "D:/OpenCV/build/install_debug/etc/haarcascades/haarcascade_fullbody.xml";
+	CascadeClassifier fullbody_cascade;
+	// Chargement des cascades
+	if (!fullbody_cascade.load(fullbody_cascade_name)) { printf("--(!)Erreur de chargemet\n"); return -1; };
+
+	video >> frame;
+	cv::Size video_size = frame.size();
+	float resize_factor = video_size.width / 360;
+
+	frame_count++;
+
+	// ******** TEST DE CLEMENT POUR LA DETECTION
+
+	vector<long long> temps;
+	int count = FPS * every_second;
+
+	while (video.read(frame))
+	{
+	// Mise à jour du numéro de frame
+	frame_count++;
+
+	//Redimensionnement de la frame (pour avoir une detection plus rapide)
+	cv::Mat resized;
+	cv::resize(frame, resized, cv::Size(video_size.width / resize_factor, video_size.height / resize_factor));
+
+	//Mise à jour du conteur
+	count--;
+	if (count == 0) // Si il doit y avoir une detection de faite sur cette frame
+	{
+	count = FPS * every_second; // Remise à zéro du conteur
+
+	// Detection et mesure du temps de detection
+	auto start = chrono::high_resolution_clock::now();
+	detection2(fullbody_cascade, resized, list_humans, 1.05, cv::Size(40, 80));
+	//detection(hog, frame, list_humans);
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+	temps.push_back(duration.count());
+	auto average = accumulate(temps.begin(), temps.end(), 0.0) / temps.size();
+
+	//Affichage des informations
+	cout << "Temps de detection moyen : " << average << endl;
+	cout << "Nombre de personnes detectees : " << list_humans.size() << endl;
+	cout << "Taille des boites : " << endl;
+	unsigned int i = 0;
+	for (vector<Rect2d>::iterator it = list_humans.begin(); it != list_humans.end(); it++, i++) {
+	cout << "Rectangle n=" << i << " : " << "largeur = " << it->width << ", hauteur : " << it->height << endl;
+	// Remise à l'échellle originale (pour affichage ulterieur, puisque la detection est terminee)
+	it->x *= resize_factor;
+	it->y *= resize_factor;
+	it->width *= resize_factor;
+	it->height *= resize_factor;
+	}
+	cout << "\n" << endl; // Saut de ligne
+	}
+
+	// Dessiner les boites
+	for (unsigned i = 0; i < list_humans.size(); i++)
+	rectangle(frame, list_humans[i], Scalar(255, 0, 0), 2, 1);
+
+	// On affiche le temps de vidéo écoulé
+	putText(frame, "Temps : " + to_string(double(frame_count) / 30.0) + "s", Point(100, 100), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+	imshow("test", frame);
+	if (waitKey(20) >= 0)
+	break;
+	}*/
+
 
 
 

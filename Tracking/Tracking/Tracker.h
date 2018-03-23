@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <atomic>
 
 // Un tracker = une cible
 class OneTracker 
