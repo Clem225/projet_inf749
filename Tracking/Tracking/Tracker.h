@@ -95,5 +95,6 @@ public:
 	// Lancement du tracking sur tous les objets
 	bool launchTracking(const cv::Mat& frame);
 
-
+	// Suppression des boites chevauchantes
+	//void deleteBbox();
 };

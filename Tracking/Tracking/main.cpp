@@ -16,10 +16,10 @@ using namespace cv;
 
 int main(int argc, const char * argv[])
 {
-	const short FPS = 50;
+	const short FPS = 30;
 	const double every_second = 1;
 	int frame_count = 0;
-	VideoCapture video("Videos/terrace1-c3.avi"); // Mettre 0 pour webcam
+	VideoCapture video("C:/Users/Rafik/Downloads/ETS Cours/H18/INF749/Projet/projet_inf749/Tracking/Tracking/Videos/terrace1-c3.avi"); // Mettre 0 pour webcam
 
 	if (!video.isOpened())
 	{
@@ -35,6 +35,8 @@ int main(int argc, const char * argv[])
 
 	// Liste des humains à traquer
 	vector<Rect2d> list_humans;
+	vector<double> levelWeights;
+	vector<int> rejectLevels;
 
 
 	// Detection
@@ -84,7 +86,23 @@ int main(int argc, const char * argv[])
 
 			// Detection et mesure du temps de detection
 			auto start = chrono::high_resolution_clock::now();
-			detection2(fullbody_cascade, resized, list_humans, 1.05, cv::Size(40, 80));
+			detection2(fullbody_cascade, resized, list_humans, 1.05, levelWeights, rejectLevels, cv::Size(40, 80));
+
+			/*vector <Rect2d> list_objects = trackingManager.getListObjects();
+			vector <Rect2d> rec_superposes;
+
+			for (int i = 0; i < list_humans.size(); i++)
+			{
+				for (int j = 0; j < list_objects.size(); j++)
+					if (est_superpose(list_humans[i], list_objects[j]))
+					{
+						rec_superposes.push_back(list_humans[i]);
+						rec_superposes.push_back(list_objects[j]);
+					}
+
+			}*/
+		
+
 			//detection(hog, frame, list_humans);
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
 			temps.push_back(duration.count());
@@ -93,13 +111,13 @@ int main(int argc, const char * argv[])
 			//Affichage des informations
 			cout << "Temps de detection moyen : " << average << endl;
 			cout << "Nombre de personnes detectees : " << list_humans.size() << endl;
-			cout << "Taille des boites : " << endl;
+			//cout << "Taille des boites : " << endl;
 
-			unsigned int i = 0;
-			for (vector<Rect2d>::iterator it = list_humans.begin(); it != list_humans.end(); it++, i++) {
-				cout << "Rectangle n=" << i << " : " << "largeur = " << it->width << ", hauteur : " << it->height << endl;
-			}
-			cout << "\n" << endl; // Saut de ligne
+			//unsigned int i = 0;
+			//for (vector<Rect2d>::iterator it = list_humans.begin(); it != list_humans.end(); it++, i++) {
+			//	cout << "Rectangle n=" << i << " : " << "largeur = " << it->width << ", hauteur : " << it->height << endl;
+			//}
+			//cout << "\n" << endl; // Saut de ligne
 
 			// Tracking
 			trackingManager.setListObjects(list_humans);
