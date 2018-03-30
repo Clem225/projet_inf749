@@ -68,11 +68,8 @@ void detection2(CascadeClassifier &classif, Mat &frame, vector<Rect2d> &detect_l
 		Rect r = humans[i];	// on crée un rectangle pour l'humain i
 
 		for (j = 0; j < humans.size(); j++)       // pas de petit rectangle dans un grand rectangle (pas de chevauchement)
-			if (j != i && (r & humans[j]).area() > 0)
-			{
-				cout << "WAAAAAZAAAAAAAAAAAAAAAA\n";
+			if (j != i && (r & humans[j]) == r)
 				break;
-			}
 				
 
 		if (j == humans.size())
@@ -92,6 +89,125 @@ void detection2(CascadeClassifier &classif, Mat &frame, vector<Rect2d> &detect_l
 		detect_list.push_back(bbox);
 
 		//rectangle(frame, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
+	}
+}
+
+
+/* IL FAUT PRENDRE QUE LES BOITES DU TRACKER */
+void nms(const std::vector<cv::Rect2d>& srcRects, std::vector<cv::Rect2d>& resRects, float thresh, int neighbors = 0)
+{
+	resRects.clear();
+
+	const size_t size = srcRects.size();
+	if (!size)
+	{
+		return;
+	}
+
+	// Sort the bounding boxes by the bottom - right y - coordinate of the bounding box
+	std::multimap<int, size_t> idxs;
+	for (size_t i = 0; i < size; ++i)
+	{
+		idxs.insert(std::pair<int, size_t>(srcRects[i].br().y, i)); // br = bottom right corner
+	}
+
+	// keep looping while some indexes still remain in the indexes list
+	while (idxs.size() > 0)
+	{
+		// grab the last rectangle
+		auto lastElem = --std::end(idxs);
+		const cv::Rect2d& rect1 = srcRects[lastElem->second];
+
+		int neigborsCount = 0;
+
+		idxs.erase(lastElem);
+
+		for (auto pos = std::begin(idxs); pos != std::end(idxs); )
+		{
+			// grab the current rectangle
+			const cv::Rect2d& rect2 = srcRects[pos->second];
+
+			double intArea = (rect1 & rect2).area();
+			double unionArea = rect1.area() + rect2.area() - intArea;
+			double overlap = intArea / unionArea;
+
+			cout << rect1 << " - " << rect2 << " OVERLAP : " << overlap << endl;
+
+			// if there is sufficient overlap, suppress the current bounding box
+			if (overlap > thresh)
+			{
+				pos = idxs.erase(pos);
+				++neigborsCount;
+			}
+			else
+			{
+				++pos;
+			}
+		}
+		if (neigborsCount >= neighbors)
+		{
+			resRects.push_back(rect1);
+		}
+	}
+}
+
+void nms2(const std::vector<cv::Rect2d>& srcRects, const std::vector<float>& scores, std::vector<cv::Rect2d>& resRects, float thresh, int neighbors = 0, float minScoresSum = 0.f)
+{
+	resRects.clear();
+
+	const size_t size = srcRects.size();
+	if (!size)
+	{
+		return;
+	}
+
+	assert(srcRects.size() == scores.size());
+
+	// Sort the bounding boxes by the detection score
+	std::multimap<float, size_t> idxs;
+	for (size_t i = 0; i < size; ++i)
+	{
+		idxs.insert(std::pair<float, size_t>(scores[i], i));
+	}
+
+	// keep looping while some indexes still remain in the indexes list
+	while (idxs.size() > 0)
+	{
+		// grab the last rectangle
+		auto lastElem = --std::end(idxs);
+		const cv::Rect2d& rect1 = srcRects[lastElem->second];
+
+		int neigborsCount = 0;
+		float scoresSum = lastElem->first;
+
+		idxs.erase(lastElem);
+
+		for (auto pos = std::begin(idxs); pos != std::end(idxs); )
+		{
+			// grab the current rectangle
+			const cv::Rect2d& rect2 = srcRects[pos->second];
+
+			double intArea = (rect1 & rect2).area();
+			double unionArea = rect1.area() + rect2.area() - intArea;
+			double overlap = intArea / unionArea;
+
+			// if there is sufficient overlap, suppress the current bounding box
+			if (overlap > thresh)
+			{
+				scoresSum += pos->first;
+				pos = idxs.erase(pos);
+				++neigborsCount;
+			}
+			else
+			{
+				++pos;
+			}
+		}
+		if (neigborsCount >= neighbors &&
+			scoresSum >= minScoresSum)
+		{
+			resRects.push_back(rect1);
+		}
 	}
 }
 
@@ -123,7 +239,7 @@ cv::Rect2d choix_rectangle(vector<cv::Rect2d> rec_superposes, vector<double> sco
 		if (scores[i]>score_max)
 		{
 			score_max = scores[i];
-		indice = i;
+			indice = i;
 		}
 	}
 	return rec_superposes[indice];

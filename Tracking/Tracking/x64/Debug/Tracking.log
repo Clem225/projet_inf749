@@ -1,4 +1,17 @@
-﻿  Tracker.cpp
-c:\users\rafik\documents\github\projet_inf749\tracking\tracking\tracker.cpp(92): warning C4244: 'return' : conversion de '__int64' en 'int', perte possible de données
-c:\users\rafik\documents\github\projet_inf749\tracking\tracking\tracker.cpp(157): warning C4715: 'TrackingManager::initTracking' : les chemins de contrôle ne retournent pas tous une valeur
+﻿  detection.cpp
+c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.12.25827\include\utility(200): warning C4244: 'initialisation' : conversion de 'double' en 'int', perte possible de données
+  c:\users\rafik\documents\github\projet_inf749\tracking\tracking\detection.cpp(111): note: voir la référence à l'instanciation de la fonction modèle 'std::pair<int,::size_t>::pair<_Tp,size_t&,0>(_Other1 &&,_Other2) noexcept' en cours de compilation
+          with
+          [
+              _Tp=double,
+              _Other1=double,
+              _Other2=size_t &
+          ]
+  c:\users\rafik\documents\github\projet_inf749\tracking\tracking\detection.cpp(111): note: voir la référence à l'instanciation de la fonction modèle 'std::pair<int,::size_t>::pair<_Tp,size_t&,0>(_Other1 &&,_Other2) noexcept' en cours de compilation
+          with
+          [
+              _Tp=double,
+              _Other1=double,
+              _Other2=size_t &
+          ]
   Tracking.vcxproj -> C:\Users\Rafik\Documents\GitHub\projet_inf749\Tracking\x64\Debug\Tracking.exe

@@ -163,7 +163,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Tracker.h" />
-    <ClInclude Include="tracking.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="detection.cpp" />
@@ -175,7 +174,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Tracker.cpp" />
-    <ClCompile Include="tracking.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

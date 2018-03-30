@@ -2,7 +2,6 @@
 //
 #include "stdafx.h"
 #include "detection.h"
-//#include "tracking.h"
 #include "tracker.h"
 
 #include <chrono>
@@ -14,9 +13,10 @@ using namespace cv;
 #define WIDTH_RESIZE 360;
 #define TRACKER_MAJ 4;
 
+
 int main(int argc, const char * argv[])
 {
-	const short FPS = 30;
+	const short FPS = 25;
 	const double every_second = 1;
 	int frame_count = 0;
 	VideoCapture video("C:/Users/Rafik/Downloads/ETS Cours/H18/INF749/Projet/projet_inf749/Tracking/Tracking/Videos/terrace1-c3.avi"); // Mettre 0 pour webcam
@@ -80,28 +80,99 @@ int main(int argc, const char * argv[])
 		if (count == 0)
 		{
 			count = FPS * every_second;
-			/*detection2(hog, resized, list_humans);
-			trackingManager.setListObjects(list_humans);
-			trackingManager.initTracking();*/
 
 			// Detection et mesure du temps de detection
 			auto start = chrono::high_resolution_clock::now();
 			detection2(fullbody_cascade, resized, list_humans, 1.05, levelWeights, rejectLevels, cv::Size(40, 80));
 
-			/*vector <Rect2d> list_objects = trackingManager.getListObjects();
-			vector <Rect2d> rec_superposes;
+			vector <Rect2d> list_objects_tracker = trackingManager.getListObjects();
+			vector <Rect2d> list_objects = list_objects_tracker;
+			vector <Rect2d> nms_list_objects, new_list_objects;
+
+
+			cout << "******  LISTE TRACKER \n";
+			for (int i = 0; i < list_objects.size(); i++)
+				cout << list_objects[i] << endl;
+			cout << "******\n\n";
 
 			for (int i = 0; i < list_humans.size(); i++)
-			{
-				for (int j = 0; j < list_objects.size(); j++)
-					if (est_superpose(list_humans[i], list_objects[j]))
-					{
-						rec_superposes.push_back(list_humans[i]);
-						rec_superposes.push_back(list_objects[j]);
-					}
+				list_objects.push_back(list_humans[i]);
 
-			}*/
-		
+			for (int i = 0; i < list_objects_tracker.size(); i++)
+				list_objects.push_back(list_objects_tracker[i]);
+
+			//vector<Rect2d> rectangles =
+			//{
+			//	Rect2d(300, 300, 100, 100),
+			//	Rect2d(320, 320, 100, 100),
+			//	Rect2d(295, 259, 186, 186),
+			//	Rect2d(100, 100, 50, 50),
+			//	Rect2d(90, 90, 90, 90),
+			//	Rect2d(112, 112, 58, 58)
+			//};
+
+			cout << "******  LISTE TOTALE : TRACKER + DETECTEUR\n";
+			for (int i = 0; i < list_objects.size(); i++)
+				cout << list_objects[i] << endl;
+			cout << "******\n\n";
+
+
+			//std::vector<cv::Rect2d> new_list_objects = nms(RectanglesToBoxes(rectangles), 0.3);
+			nms(list_objects, nms_list_objects, 0.2);
+
+
+			cout << "******  LISTE APRES NMS \n";
+			for (int i = 0; i < nms_list_objects.size(); i++)
+				cout << nms_list_objects[i] << endl;
+			cout << "******\n\n";
+
+
+			for (int i = 0; i < nms_list_objects.size(); i++)
+			{
+				Rect2d r = nms_list_objects[i];
+				int j;
+
+				for (j = 0; j < list_objects_tracker.size(); j++)
+					if(list_objects_tracker[j] == r)
+						break;
+
+				if (j == list_objects_tracker.size())
+					new_list_objects.push_back(r);
+			}
+
+			cout << "******  LISTE FINALE \n";
+			for (int i = 0; i < new_list_objects.size(); i++)
+				cout << new_list_objects[i] << endl;
+			cout << "******\n\n";
+
+			//for (int i = 0; i < list_humans.size(); i++)
+			//{
+			//	for (int j = 0; j < list_objects.size(); j++)
+			//		if (est_superpose(list_humans[i], list_objects[j]))
+			//		{
+			//			rec_superposes.push_back(list_humans[i]);
+			//			rec_superposes.push_back(list_objects[j]);
+			//		}
+
+			//}
+			
+			//for (int i = 0; i < list_humans.size(); i++)
+			//{
+			//	Rect2d r = list_humans[i];	// on crée un rectangle pour l'humain i
+			//	int j;
+
+			//	for (j = 0; j < list_objects.size(); j++)       // pas de petit rectangle dans un grand rectangle (pas de chevauchement)
+			//		if ((r & list_objects[j]).area() >= 0)
+			//		{
+			//			cout << "WAAAAAZAAAAAAAAAAAAAAAA\n";
+			//			break;
+			//		}
+
+			//	if (j == list_objects.size())
+			//		new_list_objects.push_back(r);
+			//}
+
+			//cout << "NEW LIST : " << new_list_objects.size() << endl;
 
 			//detection(hog, frame, list_humans);
 			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -109,8 +180,8 @@ int main(int argc, const char * argv[])
 			auto average = accumulate(temps.begin(), temps.end(), 0.0) / temps.size();
 
 			//Affichage des informations
-			cout << "Temps de detection moyen : " << average << endl;
-			cout << "Nombre de personnes detectees : " << list_humans.size() << endl;
+			//cout << "Temps de detection moyen : " << average << endl;
+			//cout << "Nombre de personnes detectees : " << list_humans.size() << endl;
 			//cout << "Taille des boites : " << endl;
 
 			//unsigned int i = 0;
@@ -120,7 +191,7 @@ int main(int argc, const char * argv[])
 			//cout << "\n" << endl; // Saut de ligne
 
 			// Tracking
-			trackingManager.setListObjects(list_humans);
+			trackingManager.setListObjects(new_list_objects);
 			trackingManager.initTracking();
 		}
 
@@ -141,6 +212,7 @@ int main(int argc, const char * argv[])
 		{
 			// BROUILLON FAUDRA FAIRE UNE CLASSE SPECIALE POUR DESSINER LES BOITES
 			MultiTrackers multiTracker = trackingManager.getMultiTrackers();
+			//cout << multiTracker.getMultiTracker().size() << endl;
 
 			for_each(multiTracker.getMultiTracker().begin(), multiTracker.getMultiTracker().end(), [&](auto tracker) {
 

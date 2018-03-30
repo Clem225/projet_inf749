@@ -60,6 +60,8 @@ public:
 	// On delete le tracker du vecteur qui suit l'objet id
 	bool deleteTracker(unsigned int object_id);
 
+	std::vector<cv::Rect2d> getAllBoxes();
+
 };
 
 
