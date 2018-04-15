@@ -8,7 +8,7 @@ class OneTracker
 {
 
 private:
-	cv::Ptr<cv::Tracker> tracker; // Ptr = shared_ptr = > pointeur intelligent partagé
+	cv::Ptr<cv::Tracker> tracker; 
 	unsigned int objectID; // Identifiant de la cible
 	cv::Rect2d bbox; // Rectangle de la cible
 	bool trackerActivated; // Si le tracker est initialisé
@@ -60,6 +60,7 @@ public:
 	// On delete le tracker du vecteur qui suit l'objet id
 	bool deleteTracker(unsigned int object_id);
 
+	// Renvoie toutes les boxes du multitracker
 	std::vector<cv::Rect2d> getAllBoxes();
 
 };
@@ -76,7 +77,7 @@ private:
 	TrackingManager() = default;
 
 public:
-	// Singleton OKLMZER
+	// Singleton
 	static TrackingManager& getInstance() noexcept;
 
 	// Getters
@@ -97,6 +98,6 @@ public:
 	// Lancement du tracking sur tous les objets
 	bool launchTracking(const cv::Mat& frame);
 
-	// Suppression des boites chevauchantes
-	//void deleteBbox();
+	// Nettoyage des trackers => fin du programme
+	void endTracking();
 };
